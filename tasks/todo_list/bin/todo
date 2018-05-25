@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+require 'optionparser'
+
+lib_path = File.expand_path('../lib', File.dirname(__FILE__))
+$LOAD_PATH.unshift(lib_path) unless $LOAD_PATH.include?(lib_path)
+
+require 'todo_list'
+
+ARGV << '-h' if ARGV.empty?
+
+OptionParser.new do |parser| # rubocop:disable Metrics/BlockLength
+  parser.banner = "Usage: #{$PROGRAM_NAME} [options]"
+
+  parser.on('-h', '--help', 'Show this help message') { puts parser }
+  parser.on('-a', '--add "<TODO>"', String, 'Add an item to todo list') do |todo| # rubocop:disable Metrics/LineLength
+    todo_list = TodoList.new
+    todo_list.add(todo)
+    todo_list.save
+
+    STDOUT.write("Todo created: '#{todo}'.\n")
+  end
+
+  parser.on('-r', '--remove <ID>', Integer, 'Remove the matching id item from todo list') do |id| # rubocop:disable Metrics/LineLength
+    todo_list = TodoList.new
+    todo = todo_list.remove(id)
+
+    if todo
+      todo_list.save
+      STDOUT.write("Todo removed: '#{todo}'.\n")
+    else
+      abort("Invalid todo id: #{id}.")
+    end
+  end
+
+  parser.on('-l', '--list', 'List todo list items') do
+    todo_list = TodoList.new.list
+
+    if todo_list.empty?
+      STDOUT.write("Todo list is empty.\n")
+    else
+      STDOUT.write("Todos:\n")
+      todo_list.each_with_index do |value, index|
+        STDOUT.write("\t[#{index}]: #{value}.\n")
+      end
+    end
+  end
+
+  parser.on('-c', '--clear', 'Clear all the items from todo list') do
+    todo_list = TodoList.new
+    todo_list.clear
+    todo_list.save
+
+    STDOUT.write("Todo list cleared.\n")
+  end
+end.parse!
